@@ -15,10 +15,15 @@ public class Player : MonoBehaviour {
 	public float MaxScale;
 	public float ScaleIncreasePerSecond;
 
+	tk2dSpriteAnimator anim;
+
+	bool isCrouched = false;
+
 	[System.NonSerialized]
 	public Vector3 LastGroundedPosition;
 
 	public Transform[] HeadPoints;
+	public Transform[] CrouchedHeadPoints;
 	public Transform[] FeetPoints;
 
 	[System.NonSerialized]
@@ -41,6 +46,7 @@ public class Player : MonoBehaviour {
 		Current = this;
 		_r = GetComponent<Rigidbody2D>();
 		_t = transform;
+		anim = GetComponent<tk2dSpriteAnimator>();
 	}
 
 	void Start()
@@ -48,17 +54,32 @@ public class Player : MonoBehaviour {
 		collisionLayer = LayerMask.GetMask(COLLISION_LAYER);
 		CurrentState = PlayerState.Standing;
 		LastGroundedPosition = _t.position;
+		CurrentScale = MinScale;
 	}
 
 	Vector2 velocity;
-
+	Vector3 scale;
+	Vector3 pos;
 	void FixedUpdate()
 	{
 		if (GameState.CurrentPlayState == GameState.PlayState.Playing)
 		{
 			UpdatePlayerState();
-			velocity.x = RunSpeed * GameState.TimeScale * CurrentScale * Time.fixedDeltaTime;
+			velocity.x = RunSpeed * GameState.TimeScale * CurrentScale;
 			_r.velocity = velocity;
+
+			if (CurrentScale < MaxScale)
+			{
+				CurrentScale += (ScaleIncreasePerSecond * GameState.TimeScale);
+				if (CurrentScale > MaxScale)
+					CurrentScale = MaxScale;
+
+				scale = _t.localScale;
+				scale.x = CurrentScale;
+				scale.y = CurrentScale;
+				_t.localScale = scale;
+			}
+
 		}
 	}
 
@@ -80,14 +101,14 @@ public class Player : MonoBehaviour {
 
 	Vector2 tmpPos;
 	RaycastHit2D hit;
-	const float RAYCAST_DISTANCE = 0.101f;
+	const float RAYCAST_DISTANCE = 0.1001f;
 	bool foundHit = false;
 	void UpdatePlayerState()
 	{
 		// If jumping, try going to falling
 		if (CurrentState == PlayerState.Jumping)
 		{
-			foreach (var t in HeadPoints)
+			foreach (var t in isCrouched ? CrouchedHeadPoints : HeadPoints)
 			{
 				tmpPos.x = t.position.x;
 				tmpPos.y = t.position.y;
@@ -207,6 +228,10 @@ public class Player : MonoBehaviour {
 		}
 	}
 
+	bool wasCrouched = true;
+	const string ANIM_CROUCH = "Crouch";
+	const string ANIM_STAND = "Stand";
+
 	// Update is called once per frame
 	void Update () {
 
@@ -220,7 +245,12 @@ public class Player : MonoBehaviour {
 			}
 
 			// Test for crouch
-			
+			isCrouched = Input.GetButton(INPUT_DOWN);
+			if (isCrouched != wasCrouched)
+			{
+				anim.Play(isCrouched ? ANIM_CROUCH : ANIM_STAND);
+			}
+			wasCrouched = isCrouched;
 		}
 		else
 		{
