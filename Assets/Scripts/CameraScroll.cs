@@ -10,6 +10,7 @@ public class CameraScroll : MonoBehaviour {
 	Rigidbody2D _pr;
 	Rigidbody2D _r;
 
+	bool started = false;
 	float defaultSize;
 
 	public float InitAcceleration;
@@ -30,7 +31,7 @@ public class CameraScroll : MonoBehaviour {
 	void Start()
 	{
 		cam = Camera.main;
-		defaultSize = cam.orthographicSize;
+		defaultSize = cam.orthographicSize = 5;
 		player = Player.Current;
 		_pt = player.transform;
 		_pr = player.GetComponent<Rigidbody2D>();
@@ -85,18 +86,26 @@ public class CameraScroll : MonoBehaviour {
 	{
 		if (GameState.CurrentPlayState == GameState.PlayState.Init)
 		{
-			speed += Time.fixedDeltaTime * InitAcceleration * GameState.TimeScale;
-			translatedPos = _t.position + ((targetPos - _t.position) * speed);
-
-			if (translatedPos.x >= targetPos.x - 0.1f)
+			if (started)
 			{
-				GameState.CurrentPlayState = GameState.PlayState.Playing;
-				translatedPos = targetPos;
+				speed += Time.fixedDeltaTime * InitAcceleration * GameState.TimeScale;
+				translatedPos = _t.position + ((targetPos - _t.position) * speed);
 
-				bufferX = PlayerOffset;
+				if (translatedPos.x >= targetPos.x - 0.1f)
+				{
+					GameState.CurrentPlayState = GameState.PlayState.Playing;
+					translatedPos = targetPos;
+
+					bufferX = PlayerOffset;
+				}
+
+				_t.position = translatedPos;
 			}
-
-			_t.position = translatedPos;
+			else
+			{
+				if (Input.anyKeyDown)
+					started = true;
+			}
 		}
 		else if (GameState.CurrentPlayState == GameState.PlayState.Playing)
 		{
