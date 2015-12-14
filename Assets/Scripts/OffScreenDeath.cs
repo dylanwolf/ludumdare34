@@ -52,6 +52,7 @@ public class OffScreenDeath : MonoBehaviour {
 		if (c.tag == PLAYER_TAG && GameState.CurrentPlayState == GameState.PlayState.Playing)
 		{
 			dead = true;
+			GameState.IsAlive = false;
 		}
 	}
 
